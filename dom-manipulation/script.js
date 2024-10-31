@@ -26,9 +26,45 @@ function showRandomQuote() {
     quoteElement.appendChild(categorySpan);
 }
 
-function addQuote() {
-    const newQuoteText = document.getElementById('newQuoteText').value.trim();
-    const newQuoteCategory = document.getElementById('newQuoteCategory').value.trim();
+function createAddQuoteForm() {
+    const formContainer = document.createElement('div');
+    formContainer.id = 'addQuoteForm';
+
+    const h2 = document.createElement('h2');
+    h2.textContent = 'Add New Quote';
+    formContainer.appendChild(h2);
+
+    const form = document.createElement('form');
+    form.addEventListener('submit', handleSubmitNewQuote);
+
+    const inputText = document.createElement('input');
+    inputText.type = 'text';
+    inputText.id = 'newQuoteText';
+    inputText.placeholder = 'Enter your quote here...';
+    form.appendChild(inputText);
+
+    const inputCategory = document.createElement('input');
+    inputCategory.type = 'text';
+    inputCategory.id = 'newQuoteCategory';
+    inputCategory.placeholder = 'Enter quote category...';
+    form.appendChild(inputCategory);
+
+    const submitButton = document.createElement('button');
+    submitButton.type = 'submit';
+    submitButton.textContent = 'Add Quote';
+    form.appendChild(submitButton);
+
+    formContainer.appendChild(form);
+
+    const button = document.querySelector('#newQuote');
+    button.parentNode.insertBefore(formContainer, button.nextSibling);
+}
+
+function handleSubmitNewQuote(event) {
+    event.preventDefault();
+    const formData = new FormData(event.target);
+    const newQuoteText = formData.get('newQuoteText');
+    const newQuoteCategory = formData.get('newQuoteCategory');
 
     if (newQuoteText && newQuoteCategory) {
         const newQuote = { text: newQuoteText, category: newQuoteCategory };
@@ -37,11 +73,8 @@ function addQuote() {
         // Show the newly added quote
         showRandomQuote();
 
-        // Clear form inputs
-        document.getElementById('newQuoteText').value = '';
-        document.getElementById('newQuoteCategory').value = '';
-
-        alert('Quote added successfully!');
+        // Clear the form after submission
+        event.target.reset();
     } else {
         alert('Please fill out both fields.');
     }
