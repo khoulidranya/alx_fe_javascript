@@ -14,7 +14,6 @@ function showRandomQuote() {
     const quoteDisplay = document.getElementById("quoteDisplay");
     quoteDisplay.innerHTML = `<p>${quote.text}</p><small>— ${quote.category}</small>`;
 }
-
 document.getElementById("newQuote").addEventListener("click", showRandomQuote);
 showRandomQuote(); // Display a random quote on page load
 
@@ -23,8 +22,10 @@ function addQuote() {
     const quoteCategory = document.getElementById("newQuoteCategory").value;
 
     if (quoteText && quoteCategory) {
-        quotes.push({ text: quoteText, category: quoteCategory });
+        const newQuote = { text: quoteText, category: quoteCategory };
+        quotes.push(newQuote);
         saveQuotes(); // Save updated quotes to localStorage
+        postQuoteToServer(newQuote); // Sync with server
         document.getElementById("newQuoteText").value = '';
         document.getElementById("newQuoteCategory").value = '';
         alert("Quote added successfully!");
@@ -32,7 +33,6 @@ function addQuote() {
         alert("Please enter both quote text and category.");
     }
 }
-
 function exportToJson() {
     const jsonData = JSON.stringify(quotes);
     const blob = new Blob([jsonData], { type: "application/json" });
@@ -50,7 +50,6 @@ function importFromJsonFile(event) {
     fileReader.onload = function(event) {
         try {
             const importedQuotes = JSON.parse(event.target.result);
-            // Check if the imported data is valid
             if (Array.isArray(importedQuotes) && importedQuotes.every(q => q.text && q.category)) {
                 quotes.push(...importedQuotes);
                 saveQuotes(); // Save updated quotes to localStorage
@@ -65,3 +64,47 @@ function importFromJsonFile(event) {
     };
     fileReader.readAsText(event.target.files[0]);
 }
+
+async function postQuoteToServer(quote) {
+    try {
+        await fetch('https://jsonplaceholder.typicode.com/posts', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(quote),
+        });
+        console.log("Quote synced with server.");
+    } catch (error) {
+        console.error("Error syncing with server:", error);
+    }
+}
+async function fetchQuotesFromServer() {
+    try {
+        const response = await fetch('https://jsonplaceholder.typicode.com/posts');
+        const serverQuotes = await response.json();
+
+        // Check if serverQuotes has new data not in local quotes
+        let hasNewQuotes = false;
+        serverQuotes.forEach(serverQuote => {
+            if (!quotes.some(localQuote => localQuote.text === serverQuote.title)) {
+                quotes.push({ text: serverQuote.title, category: "Imported" });
+                hasNewQuotes = true;
+            }
+        });
+
+        if (hasNewQuotes) {
+            saveQuotes(); // Update localStorage with new quotes
+            alert('New quotes added from server!');
+            showRandomQuote();
+        }
+    } catch (error) {
+        console.error("Error fetching from server:", error);
+    }
+}
+
+// Periodically check for updates from the server every 60 seconds
+setInterval(fetchQuotesFromServer, 60000); // Fetch quotes every 1 minute
+
+// Initial fetch to populate with server data on page load
+fetchQuotesFromServer();
